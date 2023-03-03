@@ -1,27 +1,28 @@
-interface GenreInterface {
+export interface GenreInterface {
+    id?: number;
     name: string;
 }
 
-interface ActorInterface {
+export interface ActorInterface {
     id?: number;
     firstname: string;
     lastname: string;
 }
 
-interface DirectorInterface {
+export interface DirectorInterface {
     id?: number;
     firstname: string;
     lastname: string;
 }
 
-export default interface MovieInterface {
+export interface MovieInterface {
     id?: number;
     name: string;
     year: number|null;
     rating: number|null;
-    genres: string[];
-    actors?: Array<ActorInterface>;
-    director?: DirectorInterface;
+    genres: GenreInterface[];
+    actors: Array<ActorInterface>;
+    director?: DirectorInterface|null;
     synopsis: string;
     ageLimit: number|null;
 }

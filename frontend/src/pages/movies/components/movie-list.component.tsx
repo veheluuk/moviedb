@@ -1,52 +1,132 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Rating,
-  Typography,
+  Box, CircularProgress,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Menu,
+  MenuItem,
+  MenuProps,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Delete, Edit, InfoOutlined, MoreVert } from '@mui/icons-material';
 
-import MovieInterface from 'interfaces/movie.interface';
+import { MovieInterface } from 'interfaces';
+import { moviesApi, moviesStore, useAppDispatch, useAppSelector } from 'store';
 
-export default function MovieList(props: { movies: MovieInterface[] }) {
-  const movieItems = props.movies.map((movie: MovieInterface) => {
-    const actorNames = movie.actors?.map((actor) => `${actor.firstname} ${actor.lastname}`) ?? [];
+export function MovieList() {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const [movieId, setMovieId] = useState<number | null>(null);
+  const isLoading = useAppSelector(moviesStore.selectors.isLoading);
+  
+  const handleClick = (event: React.MouseEvent<HTMLElement>, id: number) => {
+    setAnchorEl(event.currentTarget);
+    setMovieId(id);
+  };
 
-    const movieActors = actorNames.length > 0 ? actorNames.join(', ') : '';
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
-    return (
-      <Accordion key={movie.id} disableGutters={true}>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon/>}
-          id={`movie-accordion-${movie.id}`}
-        >
-          <Typography variant="body1" style={{marginRight: 5}}><strong>{movie.name}</strong></Typography>
-          <Typography variant="body1" style={{marginRight: 10}}><strong> ({movie.year})</strong></Typography>
-          <Rating style={{marginRight: 10, opacity: 0.5}} value={movie.rating} size="small" readOnly></Rating>
-        </AccordionSummary>
-        <AccordionDetails style={{paddingTop: 0}}>
-          <Typography variant="subtitle1"><strong>Synopsis</strong></Typography>
-          <Typography variant="body1" style={{marginBottom: 10}}>
-            {movie.synopsis}
-          </Typography>
-          <Typography variant="subtitle1"><strong>Actors</strong></Typography>
-          <Typography variant="body1" style={{marginBottom: 10}}>
-            {movieActors}
-          </Typography>
-          <Typography variant="subtitle1"><strong>Director</strong></Typography>
-          <Typography variant="body1" style={{marginBottom: 10}}>
-            {movie.director?.firstname} {movie.director?.lastname}
-          </Typography>
-        </AccordionDetails>
-      </Accordion>
-    );
-  });
+  const handleInfo = () => {
+    navigate(`${movieId}`);
+  }
 
+  const handleEdit = () => {
+    navigate(`${movieId}/edit`);
+  }
+
+  const handleDelete = () => {
+    if (movieId) {
+      dispatch(moviesApi.deleteMovie(movieId));
+    }
+  }
+
+  return isLoading
+    ? <CircularProgress />
+    : <React.Fragment>
+        <MovieListItems openItemMenu={handleClick} />
+        <MovieListItemDropDownMenu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleClose}
+          onInfo={handleInfo}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </React.Fragment>
+}
+
+const MovieListItems = (props: { openItemMenu: (event: React.MouseEvent<HTMLElement>, id: number) => void }) => {
+  const movies = useAppSelector(moviesStore.selectors.filteredMovies);
+  const searchTerm = useAppSelector(moviesStore.selectors.searchTerm);
+  
   return (
     <React.Fragment>
-      {movieItems}
+      {movies.length === 0
+        ? <span>None of the movies match search term <em>{`"${searchTerm}"`}</em></span>
+        : <List>
+          {movies.map((movie: MovieInterface) =>
+            <ListItem key={movie.id!}>
+              <Box style={{ width: '100%' }}
+                   sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Link to={`/movies/${movie.id}`} color="inherit" style={{ textDecoration: 'none' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <ListItemText
+                      primary={movie.name}
+                      secondary={movie.year}
+                      style={{ marginRight: 40 }}
+                    />
+                    {/*<Rating style={{ opacity: 0.5 }} value={movie.rating} size="small" readOnly></Rating>*/}
+                  </Box>
+                </Link>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <IconButton onClick={(event) => props.openItemMenu(event, movie.id!)}>
+                    <MoreVert/>
+                  </IconButton>
+                </Box>
+              </Box>
+            </ListItem>
+          )}
+        </List>
+      }
     </React.Fragment>
   );
+}
+
+const MovieListItemDropDownMenu = (props: MovieDropDownMenuProps) => {
+  const { onEdit, onDelete, onInfo, ...rest } = props;
+
+  return (
+    <Menu anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          {...rest}
+    >
+      <MenuItem onClick={onInfo}>
+        <InfoOutlined style={{ marginRight: 10 }}/>
+        Details
+      </MenuItem>
+      <MenuItem onClick={onEdit}>
+        <Edit style={{ marginRight: 10 }}/>
+        Edit
+      </MenuItem>
+      <Divider/>
+      <MenuItem onClick={onDelete}>
+        <Delete style={{ marginRight: 10 }}/>
+        Delete
+      </MenuItem>
+    </Menu>
+  )
+};
+
+interface MovieDropDownMenuProps extends MenuProps {
+  onEdit: (event: React.MouseEvent<HTMLElement>) => void;
+  onDelete: (event: React.MouseEvent<HTMLElement>) => void;
+  onInfo: (event: React.MouseEvent<HTMLElement>) => void;
+  open: boolean;
 }

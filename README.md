@@ -1,4 +1,4 @@
-# Readme
+# Movie database
 
 `docker compose up` starts:
 - backend (localhost:8080)

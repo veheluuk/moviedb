@@ -1,30 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { FormControl, IconButton, InputAdornment, InputLabel, OutlinedInput } from '@mui/material';
-import { Clear } from '@mui/icons-material';
+import { Clear, Search } from '@mui/icons-material';
 
-import MovieInterface from 'interfaces/movie.interface';
+import { clearMoviesSearch, moviesStore, searchMovies, store, useAppSelector } from 'store';
 
-interface MovieListProps {
-  movies: MovieInterface[];
-  onSearchTermChanged: (searchTerm: string) => void;
-}
-
-export default function MovieListFilter(props: MovieListProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-
+export default function MovieListFilter() {
+  const searchTerm = useAppSelector(moviesStore.selectors.searchTerm);
   const searchTermInputElement = useRef<HTMLInputElement>(null);
   
-  const onSearchTermChanged = props.onSearchTermChanged;
-  
-  useEffect(() => {
-    onSearchTermChanged(searchTerm);
-  }, [searchTerm]);
-
   const clearSearchTerm = () => {
     if (searchTermInputElement.current) {
       searchTermInputElement.current.value = '';
     }
-    setSearchTerm('');
+    store.dispatch(clearMoviesSearch());
   }
 
   const clearIcon = searchTerm.length > 0
@@ -43,12 +31,15 @@ export default function MovieListFilter(props: MovieListProps) {
     <FormControl fullWidth variant="outlined">
       <InputLabel htmlFor="searchTerm">Search</InputLabel>
       <OutlinedInput
+        autoFocus
         id="searchTerm"
         inputRef={searchTermInputElement}
         type="text"
         label="Search"
+        startAdornment={<Search style={{marginRight: 10}}/>}
         endAdornment={clearIcon}
-        onChange={(event) => setSearchTerm(event.target.value)}
+        defaultValue={searchTerm}
+        onChange={(event) => store.dispatch(searchMovies(event.target.value))}
       />
     </FormControl>
   );
